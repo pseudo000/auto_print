@@ -2,8 +2,9 @@
 
 import PyPDF2
 import win32print
+import os
 
-pdf_path = "C:/Users/swwoo/Desktop/VS TEST/kensa.pdf"
+pdf_path = "C:/Users/swwoo/Desktop/AUTO_PRINT/kensa.pdf"
 number = "363189141066"
 formatted_number = "KIT2" + number
 
@@ -24,7 +25,11 @@ def find_pages_with_number(pdf_path, number):
     return pages_with_number
 
 def create_printable_pdf(pdf_path, pages_to_print):
-    output_pdf_path = "C:/Users/swwoo/Desktop/VS TEST/printable.pdf"
+    output_folder = "output"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    output_pdf_path = os.path.join(output_folder, "printable.pdf")
     output_pdf = PyPDF2.PdfFileWriter()
 
     pdf_file = open(pdf_path, 'rb')

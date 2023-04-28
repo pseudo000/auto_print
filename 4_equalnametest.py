@@ -2,10 +2,11 @@
 
 import PyPDF2
 import win32print
+import os
 
-pdf_path = "C:/Users/swwoo/Desktop/VS TEST/kensa.pdf"
+pdf_path = "C:/Users/swwoo/Desktop/AUTO_PRINT/kensa.pdf"
 number = "363189141066"
-# formatted_number = "KIT2" + number
+formatted_number = "KIT2" + number
 
 def find_pages_with_number(pdf_path, number):
     pdf_file = open(pdf_path, 'rb')
@@ -16,8 +17,7 @@ def find_pages_with_number(pdf_path, number):
     for page_num in range(pdf_reader.getNumPages()):
         page = pdf_reader.getPage(page_num)
         page_text = page.extractText()
-        # if number in page_text:
-        if page_text.strip() == number:   
+        if number in page_text:    
             pages_with_number.append(page_num)
 
     pdf_file.close()
@@ -25,7 +25,11 @@ def find_pages_with_number(pdf_path, number):
     return pages_with_number
 
 def create_printable_pdf(pdf_path, pages_to_print):
-    output_pdf_path = "C:/Users/swwoo/Desktop/VS TEST/printable.pdf"
+    output_folder = "output"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    output_pdf_path = os.path.join(output_folder, "printable.pdf")
     output_pdf = PyPDF2.PdfFileWriter()
 
     pdf_file = open(pdf_path, 'rb')
@@ -64,4 +68,4 @@ def print_pages_with_number(pdf_path, number):
 
     win32print.ClosePrinter(h_printer)
 
-print_pages_with_number(pdf_path, number)
+print_pages_with_number(pdf_path, formatted_number)
