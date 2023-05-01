@@ -150,4 +150,4 @@ if __name__ == '__main__':
     spreadsheet_gui.show()
     sys.exit(app.exec_())
 
-# 작업중 표를 new 붙여서 새로 저장하는 것까지 완료
+# 작업중 표를 new 붙여서 자동 저장하는 버전

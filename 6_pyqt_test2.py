@@ -12,19 +12,19 @@ from openpyxl.utils import get_column_letter
 class SpreadsheetGUI(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Spreadsheet GUI')
+        self.setWindowTitle('Scan for SP IMPORT')
 
         self.filename_label = QLabel('No file selected')
-        self.select_file_button = QPushButton('Select File')
+        self.select_file_button = QPushButton('Select File (F2)')
         self.select_file_button.clicked.connect(self.select_file)
 
-        self.input_label = QLabel('Enter a value for Column A:')
+        self.input_label = QLabel('HOUSE NO.를 스캔하세요.')
         self.input_entry = QLineEdit()
         self.input_entry.returnPressed.connect(self.submit_value)
 
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(['NO.', 'HOUSE NO.', 'SCAN', 'TIME'])
-        self.tree.setColumnCount(4)
+        self.tree.setHeaderLabels(['NO.', 'HOUSE NO.', 'CT', 'Scanned','COMPLETE', 'TIME'])
+        self.tree.setColumnCount(6)
 
 
         # set column widths
@@ -54,16 +54,21 @@ class SpreadsheetGUI(QWidget):
 
 
         # create a save button and add it to the layout
-        self.save_button = QPushButton('Save')
+        self.save_button = QPushButton('Save (F5)')
         self.save_button.clicked.connect(self.save_data)
         layout.addWidget(self.save_button)
 
         self.setLayout(layout)
-
         self.tree.itemClicked.connect(self.select_cell)        
 
         # set GUI size
         self.setGeometry(100, 100, 800, 600)
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_F5:
+            self.save_data()
+        if event.key() == QtCore.Qt.Key_F2:
+            self.select_file()
 
     def select_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Select File')
@@ -74,10 +79,13 @@ class SpreadsheetGUI(QWidget):
 
             self.tree.clear()
 
-            for i, row in enumerate(worksheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True), start=1):
-                item = QTreeWidgetItem([str(i), str(row[0]), '', ''])
+            for i, row in enumerate(worksheet.iter_rows(min_row=2, min_col=1, max_col=2, values_only=True), start=1):
+                item = QTreeWidgetItem([str(i), str(row[0]), str(row[1]), '', ''])
                 self.tree.addTopLevelItem(item)
-                
+
+            # set focus on the input_entry
+            self.input_entry.setFocus()
+         
 
     def submit_value(self):
         value = self.input_entry.text()
@@ -86,16 +94,31 @@ class SpreadsheetGUI(QWidget):
         is_value_exists = False
 
         for item in self.tree.findItems(value, Qt.MatchExactly, 1):
-            # set 'O' to column B
-            item.setText(2, 'O')
+            # increment scanned column by 1
+            scanned_col = item.text(3)
+            if scanned_col:
+                scanned_col = int(scanned_col) + 1
+            else:
+                scanned_col = 1
+            item.setText(3, str(scanned_col))
+
+            # set 'O' to complete column if Ct and scanned values are equal
+            ct_col = item.text(2)
+            if ct_col and str(scanned_col) == ct_col:
+                item.setText(4, 'O')
+            elif scanned_col > int(ct_col):
+                QMessageBox.warning(self, 'Error', '해당 HOUSE NO.의 총 CT수를 초과했습니다.')
+                item.setText(3, str(int(ct_col)))  # revert scanned value to Ct value
+
             # set current timestamp to column C
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            item.setText(3, timestamp)
+            item.setText(5, timestamp)
+
             is_value_exists = True
 
         if not is_value_exists:
             QApplication.beep()  # 비프음 재생
-            QMessageBox.warning(self, 'Error', 'Value not found in Column A.')
+            QMessageBox.warning(self, 'Error', '없는 HOUSE NO.입니다.')
 
 
     def select_cell(self, item):
@@ -121,7 +144,7 @@ class SpreadsheetGUI(QWidget):
         worksheet.title = 'Data'
 
         # write column headers
-        headers = ['HOUSE NO.', 'NAME', 'SCAN', 'TIME']
+        headers = ['NO.', 'HOUSE NO.', 'CT', 'Scanned', 'COMPLETE', 'TIME']
         for col_num, header in enumerate(headers, start=1):
             col_letter = get_column_letter(col_num)
             cell = worksheet.cell(row=1, column=col_num)
@@ -132,17 +155,17 @@ class SpreadsheetGUI(QWidget):
             item = self.tree.topLevelItem(row_num)
             house_no_value = item.text(0)
             name_value = item.text(1)
-            scan_value = item.text(2)
-            time_value = item.text(3)
+            scan_value = item.text(3)
+            complete_value = item.text(4)
+            time_value = item.text(5)
 
-            row_values = [house_no_value, name_value, scan_value, time_value]
-            for col_num, value in enumerate(row_values, start=1):
-                cell = worksheet.cell(row=row_num+1, column=col_num)
-                cell.value = value
+            # write values to worksheet
+            row = [house_no_value, name_value, '', scan_value, complete_value, time_value]
+            worksheet.append(row)
 
-        # save workbook
+        # save workbook to new file path
         workbook.save(new_file_path)
-        QMessageBox.information(self, 'Save', 'Data saved successfully.')
+        QMessageBox.information(self, 'Saved', 'Data has been saved to {}.'.format(new_file_path))
 
 
 if __name__ == '__main__':
@@ -153,5 +176,4 @@ if __name__ == '__main__':
     spreadsheet_gui.show()
     sys.exit(app.exec_())
 
-# 작업중 표를 다른이름으로 저장하기 창 버전
 
