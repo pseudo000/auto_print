@@ -27,6 +27,7 @@ class SpreadsheetGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Scan for SP IMPORT')
+        self.previous_input = None
 
         # create tab widget
         self.tab_widget = QTabWidget()
@@ -100,6 +101,9 @@ class SpreadsheetGUI(QWidget):
         self.cell_value_label2.setAlignment(Qt.AlignCenter)
         right_layout.addWidget(self.cell_value_label2)
 
+        self.back_button = QPushButton('Back (F4)')
+        self.back_button.clicked.connect(self.back_one_step)
+        left_layout.addWidget(self.back_button)
 
         right_widget.setLayout(right_layout)
 
@@ -128,13 +132,48 @@ class SpreadsheetGUI(QWidget):
 
         self.setGeometry(100, 100, 1200, 600)
 
+    def back_one_step(self):
+        # get the previous input value
+        previous_input = self.previous_input
+
+        # find the item with the previous input value in the tree
+        items = self.tree.findItems(previous_input, Qt.MatchExactly, 1)
+
+        if len(items) > 0:
+            item = items[-1]  # get the last matching item
+            scanned_col = int(item.text(3))
+
+            # decrement scanned column by 1
+            if scanned_col > 1:
+                scanned_col -= 1
+                item.setText(3, str(scanned_col))
+
+                # revert completion column to blank
+                item.setText(4, '')
+
+                # # clear timestamp column
+                # item.setText(5, '')
+
+            # remove scanned_col if it is 1
+            elif scanned_col == 1:
+                item.setText(3, '')
+                item.setText(4, '')
+                item.setText(5, '')
+
+                # clear 구분값 and 쉬퍼값 labels
+                self.cell_value_label.setText('')
+                self.cell_value_label2.setText('')
+
+
+
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_F5:
             self.save_data()
         if event.key() == QtCore.Qt.Key_F2:
             self.select_file()
-
+        if event.key() == QtCore.Qt.Key_F4:
+            self.back_one_step()
 
     def select_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Select File')
@@ -160,6 +199,15 @@ class SpreadsheetGUI(QWidget):
 
     def submit_value(self):
         value = self.input_entry.text()
+
+        # get the current value of input_entry
+        current_input = self.input_entry.text()
+
+        # add the current value to the tree
+        # self.add_to_tree(current_input)
+
+        # save the current value for the back button
+        self.previous_input = current_input
         self.input_entry.clear()
 
         is_value_exists = False

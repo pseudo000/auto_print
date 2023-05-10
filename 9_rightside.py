@@ -100,6 +100,9 @@ class SpreadsheetGUI(QWidget):
         self.cell_value_label2.setAlignment(Qt.AlignCenter)
         right_layout.addWidget(self.cell_value_label2)
 
+        self.back_button = QPushButton('Back')
+        self.back_button.clicked.connect(self.back_one_step)
+        left_layout.addWidget(self.back_button)
 
         right_widget.setLayout(right_layout)
 
@@ -127,6 +130,38 @@ class SpreadsheetGUI(QWidget):
         self.setLayout(layout)
 
         self.setGeometry(100, 100, 1200, 600)
+
+    def back_one_step(self):
+        # get the previous input value
+        previous_input = self.previous_input
+
+        # find the item with the previous input value in the tree
+        items = self.tree.findItems(previous_input, Qt.MatchExactly, 1)
+
+        if len(items) > 0:
+            item = items[-1]  # get the last matching item
+            scanned_col = int(item.text(3))
+
+            # decrement scanned column by 1
+            if scanned_col > 1:
+                scanned_col -= 1
+                item.setText(3, str(scanned_col))
+
+                # revert completion column to blank
+                item.setText(4, '')
+
+                # clear timestamp column
+                item.setText(5, '')
+
+            # remove the item if scanned column is 1
+            elif scanned_col == 1:
+                row = self.tree.indexOfTopLevelItem(item)
+                self.tree.takeTopLevelItem(row)
+
+        # clear 구분값 and 쉬퍼값 labels
+        self.cell_value_label.setText('')
+        self.cell_value_label2.setText('')
+
 
 
     def keyPressEvent(self, event):
