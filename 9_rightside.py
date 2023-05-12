@@ -27,6 +27,7 @@ class SpreadsheetGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Scan for SP IMPORT')
+        self.previous_input = None
 
         # create tab widget
         self.tab_widget = QTabWidget()
@@ -100,7 +101,7 @@ class SpreadsheetGUI(QWidget):
         self.cell_value_label2.setAlignment(Qt.AlignCenter)
         right_layout.addWidget(self.cell_value_label2)
 
-        self.back_button = QPushButton('Back')
+        self.back_button = QPushButton('Back (F4)')
         self.back_button.clicked.connect(self.back_one_step)
         left_layout.addWidget(self.back_button)
 
@@ -150,17 +151,19 @@ class SpreadsheetGUI(QWidget):
                 # revert completion column to blank
                 item.setText(4, '')
 
-                # clear timestamp column
+                # # clear timestamp column
+                # item.setText(5, '')
+
+            # remove scanned_col if it is 1
+            elif scanned_col == 1:
+                item.setText(3, '')
+                item.setText(4, '')
                 item.setText(5, '')
 
-            # remove the item if scanned column is 1
-            elif scanned_col == 1:
-                row = self.tree.indexOfTopLevelItem(item)
-                self.tree.takeTopLevelItem(row)
+                # clear 구분값 and 쉬퍼값 labels
+                self.cell_value_label.setText('')
+                self.cell_value_label2.setText('')
 
-        # clear 구분값 and 쉬퍼값 labels
-        self.cell_value_label.setText('')
-        self.cell_value_label2.setText('')
 
 
 
@@ -169,7 +172,8 @@ class SpreadsheetGUI(QWidget):
             self.save_data()
         if event.key() == QtCore.Qt.Key_F2:
             self.select_file()
-
+        if event.key() == QtCore.Qt.Key_F4:
+            self.back_one_step()
 
     def select_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Select File')
@@ -195,6 +199,15 @@ class SpreadsheetGUI(QWidget):
 
     def submit_value(self):
         value = self.input_entry.text()
+
+        # get the current value of input_entry
+        current_input = self.input_entry.text()
+
+        # add the current value to the tree
+        # self.add_to_tree(current_input)
+
+        # save the current value for the back button
+        self.previous_input = current_input
         self.input_entry.clear()
 
         is_value_exists = False
@@ -212,6 +225,10 @@ class SpreadsheetGUI(QWidget):
             ct_col = item.text(2)
             if ct_col and str(scanned_col) == ct_col:
                 item.setText(4, 'O')
+                item.setForeground(4, QtGui.QColor('red'))
+                font = QtGui.QFont()
+                font.setBold(True)
+                item.setFont(4, font)
             elif scanned_col > int(ct_col):
                 QMessageBox.warning(self, 'Error', '해당 HOUSE NO.의 총 CT수를 초과했습니다.')
                 item.setText(3, str(int(ct_col)))  # revert scanned value to Ct value
